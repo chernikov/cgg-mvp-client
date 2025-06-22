@@ -39,7 +39,7 @@ export default function Home() {
         <div className="max-w-3xl w-full bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-10 shadow-2xl backdrop-blur-md animate-fade-in">
           <div className="flex flex-col items-center mb-8">
             <div className="mb-4">
-              <Image src="/logo.png" alt="Guild Logo" width={80} height={80} className="rounded-full shadow-lg" />
+              <Image src="/logo.svg" alt="Guild Logo" width={80} height={80} className="rounded-full shadow-lg" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-yellow-200 text-center drop-shadow mb-2">
               Career Guidance Guild
