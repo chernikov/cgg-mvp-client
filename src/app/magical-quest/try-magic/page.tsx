@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import { analyzeSurveyResponses } from '@/lib/openai';
-import { collection, addDoc, setDoc, doc, arrayUnion, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, arrayUnion, updateDoc } from 'firebase/firestore';
 import { auth } from '@/lib/firebase';
 import { db } from '@/lib/firebase';
 
