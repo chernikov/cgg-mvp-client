@@ -10,6 +10,7 @@ import {
   where,
   Timestamp,
 } from "firebase/firestore";
+import type { SurveyQuestion } from "../types/survey";
 
 export interface QuestionField {
   id: string;
@@ -19,6 +20,35 @@ export interface QuestionField {
   options?: string[];
   min?: number;
   max?: number;
+}
+
+// Типи для різних видів питань
+interface TeacherQuestion {
+  id: string;
+  type: string;
+  question: { uk: string; en: string } | string;
+  placeholder?: { uk: string; en: string } | string;
+  options?: { uk: string[]; en: string[] } | string[];
+  min?: number;
+  max?: number;
+  conditional?: {
+    dependsOn: string;
+    value: { uk: string; en: string } | string;
+  };
+}
+
+interface ParentQuestion {
+  id: string;
+  type: string;
+  question: { uk: string; en: string } | string;
+  placeholder?: { uk: string; en: string } | string;
+  options?: { uk: string[]; en: string[] } | string[];
+  min?: number;
+  max?: number;
+  conditional?: {
+    dependsOn: string;
+    value: { uk: string; en: string } | string;
+  };
 }
 
 export interface Questionnaire {
@@ -177,35 +207,125 @@ class QuestionsService {
       throw error;
     }
   }
-
   // Метод для міграції існуючих питань з коду
   async migrateQuestionsFromCode(): Promise<void> {
     try {
-      // Імпортуємо питання з файлу
-      const { magicalQuestQuestions } = await import("../config/questions");
+      // Імпортуємо всі питання з файлу
+      const { 
+        questions, 
+        magicalQuestQuestions, 
+        teacherSurveyQuestions, 
+        parentSurveyQuestions 
+      } = await import("../config/questions");
 
-      // Конвертуємо кожен квест у окрему анкету
-      for (const [questKey, questions] of Object.entries(
-        magicalQuestQuestions
-      )) {
-        const questionnaire: Omit<
-          Questionnaire,
-          "id" | "createdAt" | "updatedAt"
-        > = {
-          name: `Magical Quest ${questKey}`,
-          description: `Автоматично мігровані питання з ${questKey}`,
-          questions: questions as QuestionField[],
+      console.log("🔄 Починаємо міграцію питань...");      // 1. Міграція основних питань (SurveyQuestion[])
+      if (questions && questions.length > 0) {
+        const basicQuestions: QuestionField[] = questions.map((q: SurveyQuestion, index: number) => ({
+          id: q.id || `q${index + 1}`,
+          question: q.text,
+          type: "select" as const,
+          options: q.options?.map((opt: { id: string; text: string }) => opt.text) || []
+        }));
+
+        const questionnaire = {
+          name: "Основна анкета вибору професії",
+          description: "Базові питання для визначення професійних схильностей",
+          questions: basicQuestions,
           version: 1,
           isActive: true,
         };
 
-        await this.saveQuestionnaireWithId(
-          `magical-quest-${questKey}`,
-          questionnaire
-        );
+        await this.saveQuestionnaireWithId("basic-career-survey", questionnaire);
+        console.log("✅ Мігровано основні питання");
       }
 
-      console.log("✅ Migration completed successfully");
+      // 2. Міграція магічних квестів
+      if (magicalQuestQuestions) {
+        for (const [questKey, questions] of Object.entries(magicalQuestQuestions)) {
+          const questionnaire = {
+            name: `Магічний квест - ${questKey}`,
+            description: `Детальні питання для глибокого аналізу особистості (${questKey})`,
+            questions: questions as QuestionField[],
+            version: 1,
+            isActive: true,
+          };
+
+          await this.saveQuestionnaireWithId(`magical-quest-${questKey}`, questionnaire);
+          console.log(`✅ Мігровано магічний квест: ${questKey}`);
+        }
+      }      // 3. Міграція анкети для вчителів
+      if (teacherSurveyQuestions && teacherSurveyQuestions.length > 0) {
+        const teacherQuestions: QuestionField[] = teacherSurveyQuestions.map((q: TeacherQuestion) => {
+          const baseQuestion: QuestionField = {
+            id: q.id,
+            question: typeof q.question === 'object' ? q.question.uk : q.question,
+            type: q.type === 'radio' ? 'select' : 
+                  q.type === 'checkbox' ? 'multiselect' : 
+                  q.type as 'text' | 'email' | 'number' | 'select' | 'textarea' | 'multiselect',
+          };
+
+          if (q.placeholder) {
+            baseQuestion.placeholder = typeof q.placeholder === 'object' ? q.placeholder.uk : q.placeholder;
+          }          if (q.options) {
+            baseQuestion.options = Array.isArray(q.options) ? q.options : q.options.uk;
+          }
+
+          if (q.min !== undefined) baseQuestion.min = q.min;
+          if (q.max !== undefined) baseQuestion.max = q.max;
+
+          return baseQuestion;
+        });
+
+        const questionnaire = {
+          name: "Анкета для вчителів",
+          description: "Дослідження потреб вчителів у профорієнтації учнів",
+          questions: teacherQuestions,
+          version: 1,
+          isActive: true,
+        };
+
+        await this.saveQuestionnaireWithId("teacher-survey", questionnaire);
+        console.log("✅ Мігровано анкету для вчителів");
+      }
+
+      // 4. Міграція анкети для батьків
+      if (parentSurveyQuestions && parentSurveyQuestions.length > 0) {
+        const parentQuestions: QuestionField[] = parentSurveyQuestions.map((q: ParentQuestion) => {
+          const baseQuestion: QuestionField = {
+            id: q.id,
+            question: typeof q.question === 'object' ? q.question.uk : q.question,
+            type: q.type === 'radio' ? 'select' : 
+                  q.type === 'checkbox' ? 'multiselect' : 
+                  q.type as 'text' | 'email' | 'number' | 'select' | 'textarea' | 'multiselect',
+          };
+
+          if (q.placeholder) {
+            baseQuestion.placeholder = typeof q.placeholder === 'object' ? q.placeholder.uk : q.placeholder;
+          }
+
+          if (q.options) {
+            baseQuestion.options = Array.isArray(q.options) ? q.options : q.options.uk;
+          }
+
+          if (q.min !== undefined) baseQuestion.min = q.min;
+          if (q.max !== undefined) baseQuestion.max = q.max;
+
+          return baseQuestion;
+        });
+
+        const questionnaire = {
+          name: "Анкета для батьків",
+          description: "Дослідження потреб батьків у профорієнтації дітей",
+          questions: parentQuestions,
+          version: 1,
+          isActive: true,
+        };
+
+        await this.saveQuestionnaireWithId("parent-survey", questionnaire);
+        console.log("✅ Мігровано анкету для батьків");
+      }
+
+      console.log("🎉 Міграція завершена успішно! Всі питання додано до Firebase.");
     } catch (error) {
       console.error("❌ Error during migration:", error);
       throw error;
