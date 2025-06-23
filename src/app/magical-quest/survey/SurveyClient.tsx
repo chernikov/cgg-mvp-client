@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { magicalQuestQuestions } from '@/config/questions'
 import { analyzeSurveyResponses } from '@/lib/openai'
 import type { SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
 import { Suspense } from 'react'
+import { useMagicalQuestQuestions } from '@/hooks/useQuestions'
 
 // Types
 
@@ -30,20 +30,17 @@ const steps: Step[] = [
   {
     title: 'Крок 1: Особиста інформація',
     description: 'Розкажи нам про себе',
-    questions: magicalQuestQuestions.quest1 as Question[]
+    questions: []
   },
   {
     title: 'Крок 2: Навчання та розвиток',
     description: 'Дізнаємося про твій підхід до навчання',
-    questions: magicalQuestQuestions.quest2.slice(0, -1) as Question[]
+    questions: []
   },
   {
     title: 'Крок 3: Фізичний та емоційний стан',
     description: 'Останні питання про твій стан',
-    questions: [
-      ...magicalQuestQuestions.quest2.slice(-1),
-      ...magicalQuestQuestions.quest3
-    ] as Question[]
+    questions: []
   }
 ]
 
@@ -146,11 +143,47 @@ function SurveyClient() {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [loadingAI, setLoadingAI] = useState(false)
   const [magicMsg, setMagicMsg] = useState<null | { title: string; desc: string }>(null)
+  const [stepsData, setStepsData] = useState<Step[]>(steps)
+
   const { i18n } = useTranslation()
 
-  const currentStep = steps[currentStepIndex]
-  const currentQuestion = currentStep.questions[currentQuestionIndex] as Question
-  const stepQuestionsCount = currentStep.questions.length
+  // Завантажуємо питання з Firebase
+  const quest1 = useMagicalQuestQuestions(1)
+  const quest2 = useMagicalQuestQuestions(2)
+  const quest3 = useMagicalQuestQuestions(3)
+
+  // Оновлюємо steps коли завантажуються питання
+  useEffect(() => {
+    if (!quest1.isLoading && !quest2.isLoading && !quest3.isLoading) {
+      if (quest1.questions.length > 0 && quest2.questions.length > 0 && quest3.questions.length > 0) {
+        const updatedSteps: Step[] = [
+          {
+            title: 'Крок 1: Особиста інформація',
+            description: 'Розкажи нам про себе',
+            questions: quest1.questions as Question[]
+          },
+          {
+            title: 'Крок 2: Навчання та розвиток',
+            description: 'Дізнаємося про твій підхід до навчання',
+            questions: quest2.questions.slice(0, -1) as Question[]
+          },
+          {
+            title: 'Крок 3: Фізичний та емоційний стан',
+            description: 'Останні питання про твій стан',
+            questions: [
+              ...quest2.questions.slice(-1),
+              ...quest3.questions
+            ] as Question[]
+          }
+        ]
+        setStepsData(updatedSteps)
+      }
+    }
+  }, [quest1.isLoading, quest2.isLoading, quest3.isLoading, quest1.questions, quest2.questions, quest3.questions])
+
+  const currentStep = stepsData[currentStepIndex]
+  const currentQuestion = currentStep?.questions[currentQuestionIndex] as Question
+  const stepQuestionsCount = currentStep?.questions.length || 0
   const stepProgress = ((currentQuestionIndex + 1) / stepQuestionsCount) * 100
 
   // On mount, check for step param
@@ -318,103 +351,112 @@ function SurveyClient() {
             </div>
 
             {/* Question */}
-            <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{currentQuestion.question}</h2>
+            {currentQuestion ? (
+              <>
+                <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{currentQuestion.question}</h2>
 
-            <div className="space-y-4">
-              {currentQuestion.type === 'text' || currentQuestion.type === 'email' || currentQuestion.type === 'number' ? (
-                <form onSubmit={handleTextSubmit} className="space-y-4">
-                  <input
-                    type={currentQuestion.type}
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder={currentQuestion.placeholder}
-                    min={currentQuestion.type === 'number' ? currentQuestion.min : undefined}
-                    max={currentQuestion.type === 'number' ? currentQuestion.max : undefined}
-                    className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
-                    required
-                  />
-                  <div className="flex gap-4 mt-2">
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                      className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Назад
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
-                    >
-                      Далі
-                    </button>
-                  </div>
-                </form>
-              ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
-                <>
-                  <div className="space-y-2">
-                    {currentQuestion.options?.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handleOptionSelect(option)}
-                        className={`w-full text-left p-4 rounded-xl transition-all duration-300 border-2 text-lg ${
-                          selectedOptions.includes(option)
-                            ? 'bg-green-400 text-green-900 border-green-500 font-bold'
-                            : 'bg-white text-green-900 border-green-200 hover:bg-green-100'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                  {currentQuestion.type === 'multiselect' && (
-                    <div className="flex gap-4 mt-4">
-                      <button
-                        type="button"
-                        onClick={handleBack}
-                        disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                        className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Назад
-                      </button>
-                      <button
-                        onClick={handleMultiSelectSubmit}
-                        disabled={selectedOptions.length === 0}
-                        className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                      >
-                        Далі
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : currentQuestion.type === 'textarea' ? (
-                <form onSubmit={handleTextSubmit} className="space-y-4">
-                  <textarea
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder={currentQuestion.placeholder}
-                    className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[120px] text-lg"
-                    required
-                  />
-                  <div className="flex gap-4 mt-2">
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                      className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Назад
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
-                    >
-                      Далі
-                    </button>
-                  </div>
-                </form>
-              ) : null}
-            </div>
+                <div className="space-y-4">
+                  {currentQuestion.type === 'text' || currentQuestion.type === 'email' || currentQuestion.type === 'number' ? (
+                    <form onSubmit={handleTextSubmit} className="space-y-4">
+                      <input
+                        type={currentQuestion.type}
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        placeholder={currentQuestion.placeholder}
+                        min={currentQuestion.type === 'number' ? currentQuestion.min : undefined}
+                        max={currentQuestion.type === 'number' ? currentQuestion.max : undefined}
+                        className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
+                        required
+                      />
+                      <div className="flex gap-4 mt-2">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                          className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Назад
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
+                        >
+                          Далі
+                        </button>
+                      </div>
+                    </form>
+                  ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
+                    <>
+                      <div className="space-y-2">
+                        {currentQuestion.options?.map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => handleOptionSelect(option)}
+                            className={`w-full text-left p-4 rounded-xl transition-all duration-300 border-2 text-lg ${
+                              selectedOptions.includes(option)
+                                ? 'bg-green-400 text-green-900 border-green-500 font-bold'
+                                : 'bg-white text-green-900 border-green-200 hover:bg-green-100'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                      {currentQuestion.type === 'multiselect' && (
+                        <div className="flex gap-4 mt-4">
+                          <button
+                            type="button"
+                            onClick={handleBack}
+                            disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                            className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Назад
+                          </button>
+                          <button
+                            onClick={handleMultiSelectSubmit}
+                            disabled={selectedOptions.length === 0}
+                            className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                          >
+                            Далі
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : currentQuestion.type === 'textarea' ? (
+                    <form onSubmit={handleTextSubmit} className="space-y-4">
+                      <textarea
+                        value={textInput}
+                        onChange={(e) => setTextInput(e.target.value)}
+                        placeholder={currentQuestion.placeholder}
+                        className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[120px] text-lg"
+                        required
+                      />
+                      <div className="flex gap-4 mt-2">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                          className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Назад
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
+                        >
+                          Далі
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-green-100">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-100 mx-auto mb-4"></div>
+                <p>Завантаження питання...</p>
+              </div>
+            )}
 
             {/* Motivational message */}
             <div className="mt-8 text-center text-green-100 text-lg font-semibold">

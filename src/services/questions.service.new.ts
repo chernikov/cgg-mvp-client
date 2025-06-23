@@ -10,6 +10,7 @@ import {
   where,
   Timestamp,
 } from "firebase/firestore";
+import type { SurveyQuestion } from "../types/survey";
 
 export interface QuestionField {
   id: string;
@@ -19,6 +20,35 @@ export interface QuestionField {
   options?: string[];
   min?: number;
   max?: number;
+}
+
+// Типи для різних видів питань
+interface TeacherQuestion {
+  id: string;
+  type: string;
+  question: { uk: string; en: string } | string;
+  placeholder?: { uk: string; en: string } | string;
+  options?: { uk: string[]; en: string[] } | string[];
+  min?: number;
+  max?: number;
+  conditional?: {
+    dependsOn: string;
+    value: { uk: string; en: string } | string;
+  };
+}
+
+interface ParentQuestion {
+  id: string;
+  type: string;
+  question: { uk: string; en: string } | string;
+  placeholder?: { uk: string; en: string } | string;
+  options?: { uk: string[]; en: string[] } | string[];
+  min?: number;
+  max?: number;
+  conditional?: {
+    dependsOn: string;
+    value: { uk: string; en: string } | string;
+  };
 }
 
 export interface Questionnaire {
@@ -193,5 +223,4 @@ class QuestionsService {
   }
 }
 
-const questionsService = new QuestionsService();
-export default questionsService;
+export default new QuestionsService();

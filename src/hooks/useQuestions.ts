@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import questionsService, { StoredQuestionnaire } from '../services/questions.service'
+import questionsService from '../services/questions.service'
+import type { StoredQuestionnaire } from '../services/questions.service'
 
 export function useQuestionnaires() {
   const [questionnaires, setQuestionnaires] = useState<StoredQuestionnaire[]>([])
@@ -102,10 +103,22 @@ export function useQuestionnaire(id: string) {
   }
 }
 
-// Хелпер для отримання питань конкретного типу
+// Хелпери для отримання питань конкретного типу
 export function useMagicalQuestQuestions(questNumber: number) {
   const questId = `magical-quest-quest${questNumber}`
   return useQuestionnaire(questId)
+}
+
+export function useTeacherSurveyQuestions() {
+  return useQuestionnaire('teacher-survey')
+}
+
+export function useParentSurveyQuestions() {
+  return useQuestionnaire('parent-survey')
+}
+
+export function useBasicQuestions() {
+  return useQuestionnaire('basic')
 }
 
 // Хелпер для перевірки чи є нові питання в порівнянні з кодом
@@ -119,16 +132,13 @@ export function useQuestionsComparison() {
       // Завантажуємо питання з Firebase
       const firebaseQuestionnaires = await questionsService.getAllQuestionnaires()
       
-      // Імпортуємо питання з коду
-      const { magicalQuestQuestions } = await import('../config/questions')
-      
-      // Простий аналіз - перевіряємо кількість квестів
-      const codeQuestsCount = Object.keys(magicalQuestQuestions).length
-      const firebaseQuestsCount = firebaseQuestionnaires.filter(q => 
-        q.id.startsWith('magical-quest-')
-      ).length
+      // В майбутньому тут може бути логіка для порівняння з новими питаннями
+      // Поки що просто перевіримо, чи є хоча б базові анкети
+      const requiredQuestionnaires = ['basic', 'magical-quest-quest1', 'magical-quest-quest2', 'magical-quest-quest3', 'teacher-survey', 'parent-survey']
+      const existingIds = firebaseQuestionnaires.map((q: StoredQuestionnaire) => q.id)
+      const missingQuestionnaires = requiredQuestionnaires.filter(id => !existingIds.includes(id))
 
-      setHasNewQuestions(codeQuestsCount > firebaseQuestsCount)
+      setHasNewQuestions(missingQuestionnaires.length > 0)
     } catch (error) {
       console.error('Error checking for question updates:', error)
     } finally {

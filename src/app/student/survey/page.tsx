@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { magicalQuestQuestions } from '@/config/questions'
+import { useMagicalQuestQuestions } from '@/hooks/useQuestions'
 import { analyzeSurveyResponses } from '@/lib/openai'
 import type { SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
@@ -33,13 +33,6 @@ const magicLoadingMessages = [
   }
 ];
 
-// Combine all questions into a single array
-const allQuestions = [
-  ...magicalQuestQuestions.quest1,
-  ...magicalQuestQuestions.quest2,
-  ...magicalQuestQuestions.quest3
-] as Question[];
-
 type Question = {
   id: string
   question: string
@@ -59,14 +52,49 @@ export default function StudentSurvey() {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [loadingAI, setLoadingAI] = useState(false)
   const [magicMsg, setMagicMsg] = useState(magicLoadingMessages[0])
+  
+  // Завантажуємо питання з Firebase
+  const quest1 = useMagicalQuestQuestions(1)
+  const quest2 = useMagicalQuestQuestions(2)  
+  const quest3 = useMagicalQuestQuestions(3)
 
-  const currentQuestion: Question = allQuestions[currentQuestionIndex]
-  const totalQuestions = allQuestions.length
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100
+  // Поєднуємо всі питання в один масив
+  const [allQuestions, setAllQuestions] = useState<Question[]>([])
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true)
+
+  useEffect(() => {
+    if (!quest1.isLoading && !quest2.isLoading && !quest3.isLoading) {
+      if (quest1.questions.length > 0 && quest2.questions.length > 0 && quest3.questions.length > 0) {
+        const combined = [
+          ...quest1.questions,
+          ...quest2.questions,
+          ...quest3.questions
+        ] as Question[]
+        setAllQuestions(combined)
+      }
+      setIsLoadingQuestions(false)
+    }
+  }, [quest1.isLoading, quest2.isLoading, quest3.isLoading, quest1.questions, quest2.questions, quest3.questions])
 
   useEffect(() => {
     setMagicMsg(magicLoadingMessages[Math.floor(Math.random() * magicLoadingMessages.length)])
   }, [])
+
+  // Показуємо лоадер поки завантажуються питання
+  if (isLoadingQuestions) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+          <p className="mt-4 text-yellow-200">Завантаження магічних питань...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion: Question = allQuestions[currentQuestionIndex]
+  const totalQuestions = allQuestions.length
+  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100
 
   const handleAnswer = async (answer: string | string[]) => {
     const newResponse: SurveyResponse = {
@@ -206,7 +234,7 @@ export default function StudentSurvey() {
             ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
               <>
                 <div className="space-y-2">
-                  {currentQuestion.options?.map((option) => (
+                  {currentQuestion.options?.map((option: string) => (
                     <button
                       key={option}
                       onClick={() => handleOptionSelect(option)}

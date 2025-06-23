@@ -1,20 +1,65 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { parentSurveyQuestions } from '@/config/questions';
+import { useParentSurveyQuestions } from '@/hooks/useQuestions';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '@/config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+// Тип для parent питань
+interface ParentQuestion {
+  id: string;
+  type: string;
+  question: { uk: string; en: string } | string;
+  placeholder?: { uk: string; en: string } | string;
+  options?: { uk: string[]; en: string[] } | string[];
+  min?: number;
+  max?: number;
+  conditional?: {
+    dependsOn: string;
+    value: { uk: string; en: string } | string;
+  };
+}
+
 export default function ParentSurvey() {
   const { i18n } = useTranslation();
-  const lang = i18n.language === 'uk' ? 'uk' : 'en';
+  const lang = i18n.language === 'uk' ? 'uk' : 'en' as 'uk' | 'en';
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [error, setError] = useState("");
+  
+  // Завантажуємо питання з Firebase
+  const { questions, isLoading } = useParentSurveyQuestions();
+  
+  // Перетворюємо питання у формат ParentQuestion
+  const parentSurveyQuestions = questions as ParentQuestion[];
   const current = parentSurveyQuestions[step];
   const total = parentSurveyQuestions.length;
+
+  // Хелпери для отримання локалізованих значень
+  const getLocalizedText = (text: string | { uk: string; en: string }) => {
+    return typeof text === 'string' ? text : text[lang];
+  };
+
+  const getLocalizedOptions = (options?: string[] | { uk: string[]; en: string[] }) => {
+    if (!options) return [];
+    return Array.isArray(options) ? options : options[lang];
+  };
+
+  // Показуємо лоадер поки завантажуються питання
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {lang === 'uk' ? 'Завантаження питань...' : 'Loading questions...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!current) return null;
 
@@ -105,10 +150,10 @@ export default function ParentSurvey() {
           </div>
         </div>
         <form className="w-full flex flex-col gap-4" onSubmit={handleNext}>
-          <label className="font-semibold text-yellow-200 mb-2">{current.question[lang]}</label>
+          <label className="font-semibold text-yellow-200 mb-2">{getLocalizedText(current.question)}</label>
           {current.type === "radio" ? (
             <div className="flex gap-4 flex-wrap">
-              {(current.options?.[lang] ?? []).map((opt: string) => (
+              {getLocalizedOptions(current.options).map((opt: string) => (
                 <label key={opt} className="flex items-center gap-2 text-gray-200 font-medium">
                   <input
                     type="radio"
@@ -123,7 +168,7 @@ export default function ParentSurvey() {
             </div>
           ) : current.type === "checkbox" ? (
             <div className="flex gap-4 flex-wrap">
-              {(current.options?.[lang] ?? []).map((opt: string) => (
+              {getLocalizedOptions(current.options).map((opt: string) => (
                 <label key={opt} className="flex items-center gap-2 text-gray-200 font-medium">
                   <input
                     type="checkbox"
@@ -149,7 +194,7 @@ export default function ParentSurvey() {
               className="border-2 border-gray-400 bg-white rounded px-4 py-2 w-full text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
               required
               rows={3}
-              placeholder={current.placeholder?.[lang]}
+              placeholder={getLocalizedText(current.placeholder || '')}
             />
           ) : (
             <input
@@ -164,7 +209,7 @@ export default function ParentSurvey() {
               onChange={handleChange}
               className="border-2 border-gray-400 bg-white rounded px-4 py-2 w-full text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
               required
-              placeholder={current.placeholder?.[lang]}
+              placeholder={getLocalizedText(current.placeholder || '')}
               min={current.min}
               max={current.max}
             />

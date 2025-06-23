@@ -29,16 +29,16 @@ export default function QuestionsManager() {
       setIsLoading(false);
     }
   };
-
   const handleMigration = async () => {
     setMigrationStatus("🔄 Запускаємо міграцію питань...");
     try {
+      console.log("🚀 Починаємо міграцію...");
       await questionsService.migrateQuestionsFromCode();
       setMigrationStatus("✅ Міграція завершена успішно!");
       await loadQuestionnaires();
     } catch (error) {
-      setMigrationStatus("❌ Помилка під час міграції");
       console.error("Migration error:", error);
+      setMigrationStatus(`❌ Помилка під час міграції: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
     }
   };
 
@@ -246,11 +246,10 @@ export default function QuestionsManager() {
 
       {/* Інформаційна секція */}
       <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
-        <h4 className="font-semibold text-yellow-800 mb-2">Інформація:</h4>
-        <ul className="text-sm text-yellow-700 space-y-1">
+        <h4 className="font-semibold text-yellow-800 mb-2">Інформація:</h4>        <ul className="text-sm text-yellow-700 space-y-1">
           <li>
-            • <strong>Міграція з коду</strong> - перенесе всі питання з файлу
-            questions.ts у Firebase
+            • <strong>Міграція з коду</strong> - всі питання вже перенесені з коду
+            у Firebase (міграція більше не потрібна)
           </li>
           <li>
             • <strong>Активні анкети</strong> - будуть доступні для використання
