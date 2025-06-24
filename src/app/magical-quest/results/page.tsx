@@ -8,15 +8,34 @@ import { useSaveTestResult } from '@/hooks/useQuestions'
 import testResultsService from '@/services/test-results.service'
 import surveyUtils from '@/utils/survey.utils'
 import firebaseTestUtils from '@/utils/firebase-test.utils'
-import DebugLogger from '@/components/DebugLogger'
+
+type ResultData = {
+  userId: string
+  userType: 'student' | 'teacher' | 'parent'
+  questionnaireId: string
+  questionnaireName: string
+  responses: SurveyResponse[]
+  matches: ProfessionMatch[]
+  metadata: {
+    completionTime: number
+    additionalData: {
+      language: string
+      timestamp: string
+      userAgent: string
+    }
+  }
+}
 
 export default function Results() {
   const router = useRouter()
   const { i18n } = useTranslation();
   const [matches, setMatches] = useState<ProfessionMatch[]>([])
   const [loading, setLoading] = useState(true)
+  const [shouldSave, setShouldSave] = useState(false)
+  const [resultDataToSave, setResultDataToSave] = useState<ResultData | null>(null)
   const { saveTestResult, isSaving } = useSaveTestResult()
 
+  // Ефект для завантаження даних
   useEffect(() => {
     console.log('🎯 MagicalQuest Results: Component mounted')
     
@@ -47,7 +66,7 @@ export default function Results() {
       console.log('💾 Check if already saved:', alreadySaved)
       
       if (storedResponses && !alreadySaved) {
-        console.log('🚀 Starting save process for magical quest results')
+        console.log('🚀 Preparing save process for magical quest results')
         
         const responses: SurveyResponse[] = JSON.parse(storedResponses)
         console.log('📋 Parsed responses:', responses)
@@ -63,7 +82,7 @@ export default function Results() {
         
         const resultData = {
           userId,
-          userType: 'student' as const, // За замовчуванням для магічного квесту
+          userType: 'student' as const,
           questionnaireId: 'magical-quest',
           questionnaireName: 'Магічний квест професій',
           responses,
@@ -80,23 +99,9 @@ export default function Results() {
           }
         }
         
-        console.log('📦 Final result data to save:', resultData)
-        
-        saveTestResult(resultData).then((resultId) => {
-          localStorage.setItem('magicalQuestSaved', 'true')
-          localStorage.setItem('magicalQuestResultId', resultId)
-          console.log('✅ Magical quest result saved with ID:', resultId)
-          console.log('🧹 Cleaning up temporary data...')
-          
-          // Очищуємо тимчасові дані
-          surveyUtils.clearSurveyTime('magical-quest')
-          surveyUtils.clearProgress('magical-quest')
-          
-          console.log('🎉 Save process completed successfully!')
-        }).catch((error) => {
-          console.error('❌ Error saving magical quest result:', error)
-          console.error('🔥 Error details:', error.message)
-        })
+        console.log('📦 Final result data prepared:', resultData)
+        setResultDataToSave(resultData)
+        setShouldSave(true)
       } else {
         if (alreadySaved) {
           console.log('ℹ️ Results already saved, skipping save process')
@@ -109,7 +114,34 @@ export default function Results() {
       console.log('❌ No matches found, redirecting to magical-quest')
       router.push('/magical-quest')
     }
-  }, [router, i18n.language, saveTestResult])
+  }, [router, i18n.language])
+
+  // Окремий ефект для збереження
+  useEffect(() => {
+    if (shouldSave && resultDataToSave) {
+      console.log('💾 Starting save process...')
+      
+      saveTestResult(resultDataToSave).then((resultId) => {
+        localStorage.setItem('magicalQuestSaved', 'true')
+        localStorage.setItem('magicalQuestResultId', resultId)
+        console.log('✅ Magical quest result saved with ID:', resultId)
+        console.log('🧹 Cleaning up temporary data...')
+        
+        // Очищуємо тимчасові дані
+        surveyUtils.clearSurveyTime('magical-quest')
+        surveyUtils.clearProgress('magical-quest')
+        
+        console.log('🎉 Save process completed successfully!')
+        setShouldSave(false)
+        setResultDataToSave(null)
+      }).catch((error) => {
+        console.error('❌ Error saving magical quest result:', error)
+        console.error('🔥 Error details:', error.message)
+        setShouldSave(false)
+        setResultDataToSave(null)
+      })
+    }
+  }, [shouldSave, resultDataToSave, saveTestResult])
 
   const handleTryMagic = () => {
     // Ensure matches and responses are in localStorage for the next page
@@ -176,7 +208,6 @@ export default function Results() {
           {i18n.language === 'uk' ? 'Спробувати магію' : 'Try Magic'}
         </button>
       </div>
-      <DebugLogger />
     </main>
   )
 } 
