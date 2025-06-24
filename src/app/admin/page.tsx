@@ -26,6 +26,14 @@ export default function AdminPage() {
             Перейти
           </a>
         </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-3">📊 Результати тестів</h2>
+          <p className="text-gray-600 mb-4">Статистика та аналіз результатів проходження тестів</p>
+          <a href="/admin/test-results" className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 inline-block">
+            Перейти
+          </a>
+        </div>
       </div>
     </div>
   );

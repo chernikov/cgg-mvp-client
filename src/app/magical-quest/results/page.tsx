@@ -2,41 +2,114 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { ProfessionMatch } from '@/types/survey'
+import type { ProfessionMatch, SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
-import { db, auth } from '@/config/firebase'
-import { collection, addDoc } from 'firebase/firestore'
+import { useSaveTestResult } from '@/hooks/useQuestions'
+import testResultsService from '@/services/test-results.service'
+import surveyUtils from '@/utils/survey.utils'
+import firebaseTestUtils from '@/utils/firebase-test.utils'
+import DebugLogger from '@/components/DebugLogger'
 
 export default function Results() {
   const router = useRouter()
   const { i18n } = useTranslation();
   const [matches, setMatches] = useState<ProfessionMatch[]>([])
   const [loading, setLoading] = useState(true)
+  const { saveTestResult, isSaving } = useSaveTestResult()
 
   useEffect(() => {
+    console.log('🎯 MagicalQuest Results: Component mounted')
+    
+    // Перевіряємо з'єднання з Firebase
+    firebaseTestUtils.logFirebaseConfig()
+    firebaseTestUtils.testConnection().then(connected => {
+      console.log('🔗 Firebase connection status:', connected)
+      if (connected) {
+        firebaseTestUtils.checkTestResultsCollection()
+      }
+    })
+    
     const storedMatches = localStorage.getItem('surveyMatches')
     const storedResponses = localStorage.getItem('surveyResponses')
+    
+    console.log('📂 Loading stored data from localStorage:')
+    console.log('   - surveyMatches:', storedMatches ? 'Found' : 'Not found')
+    console.log('   - surveyResponses:', storedResponses ? 'Found' : 'Not found')
+    
     if (storedMatches) {
-      setMatches(JSON.parse(storedMatches))
+      const matchesData = JSON.parse(storedMatches)
+      console.log('🎲 Parsed matches data:', matchesData)
+      setMatches(matchesData)
       setLoading(false)
-      // Save to Firestore if not already saved
-      if (storedResponses && !localStorage.getItem('magicalQuestSaved')) {
-        addDoc(collection(db, 'magical_quest_surveys'), {
-          userId: auth.currentUser?.uid || 'anonymous',
-          responses: JSON.parse(storedResponses),
-          matches: JSON.parse(storedMatches),
-          timestamp: new Date().toISOString(),
-          language: i18n.language,
-          tryMagicHistory: []
-        }).then(docRef => {
-          localStorage.setItem('magicalQuestSaved', 'true');
-          localStorage.setItem('magicalQuestDocId', docRef.id);
-        });
+      
+      // Зберігаємо результати в новому форматі, якщо ще не збережено
+      const alreadySaved = localStorage.getItem('magicalQuestSaved')
+      console.log('💾 Check if already saved:', alreadySaved)
+      
+      if (storedResponses && !alreadySaved) {
+        console.log('🚀 Starting save process for magical quest results')
+        
+        const responses: SurveyResponse[] = JSON.parse(storedResponses)
+        console.log('📋 Parsed responses:', responses)
+        
+        const userId = testResultsService.generateUserId()
+        console.log('🆔 Generated user ID:', userId)
+        
+        const completionTime = surveyUtils.calculateCompletionTime('magical-quest')
+        console.log('⏱️ Calculated completion time:', completionTime, 'seconds')
+        
+        const userMetadata = surveyUtils.loadUserMetadata()
+        console.log('👤 Loaded user metadata:', userMetadata)
+        
+        const resultData = {
+          userId,
+          userType: 'student' as const, // За замовчуванням для магічного квесту
+          questionnaireId: 'magical-quest',
+          questionnaireName: 'Магічний квест професій',
+          responses,
+          matches: matchesData,
+          metadata: {
+            completionTime,
+            ...userMetadata,
+            additionalData: {
+              language: i18n.language,
+              timestamp: new Date().toISOString(),
+              userAgent: navigator.userAgent,
+              ...userMetadata.additionalData
+            }
+          }
+        }
+        
+        console.log('📦 Final result data to save:', resultData)
+        
+        saveTestResult(resultData).then((resultId) => {
+          localStorage.setItem('magicalQuestSaved', 'true')
+          localStorage.setItem('magicalQuestResultId', resultId)
+          console.log('✅ Magical quest result saved with ID:', resultId)
+          console.log('🧹 Cleaning up temporary data...')
+          
+          // Очищуємо тимчасові дані
+          surveyUtils.clearSurveyTime('magical-quest')
+          surveyUtils.clearProgress('magical-quest')
+          
+          console.log('🎉 Save process completed successfully!')
+        }).catch((error) => {
+          console.error('❌ Error saving magical quest result:', error)
+          console.error('🔥 Error details:', error.message)
+        })
+      } else {
+        if (alreadySaved) {
+          console.log('ℹ️ Results already saved, skipping save process')
+        }
+        if (!storedResponses) {
+          console.log('⚠️ No responses found, cannot save results')
+        }
       }
     } else {
+      console.log('❌ No matches found, redirecting to magical-quest')
       router.push('/magical-quest')
     }
-  }, [router, i18n.language])
+  }, [router, i18n.language, saveTestResult])
 
   const handleTryMagic = () => {
     // Ensure matches and responses are in localStorage for the next page
@@ -61,6 +134,19 @@ export default function Results() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
       <div className="max-w-lg w-full bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-2xl animate-fade-in">
         <h1 className="text-2xl font-bold text-white mb-4">Фінальні результати</h1>
+        
+        {/* Повідомлення про збереження */}
+        {isSaving && (
+          <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+            <p className="text-blue-200 text-sm">Збереження результатів...</p>
+          </div>
+        )}
+        
+        {localStorage.getItem('magicalQuestSaved') && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+            <p className="text-green-200 text-sm">✅ Результати збережено!</p>
+          </div>
+        )}
         {matches.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xl font-bold text-green-200 mb-2">Професії, які рекомендує ШІ:</h2>
@@ -90,6 +176,7 @@ export default function Results() {
           {i18n.language === 'uk' ? 'Спробувати магію' : 'Try Magic'}
         </button>
       </div>
+      <DebugLogger />
     </main>
   )
 } 

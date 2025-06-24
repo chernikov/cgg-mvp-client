@@ -6,7 +6,8 @@ import { analyzeSurveyResponses } from '@/lib/openai'
 import type { SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
 import { Suspense } from 'react'
-import { useMagicalQuestQuestions } from '@/hooks/useQuestions'
+import { useMagicalQuestQuestions, useSaveProgressiveResults } from '@/hooks/useQuestions'
+import surveyUtils from '@/utils/survey.utils'
 
 // Types
 
@@ -147,6 +148,12 @@ function SurveyClient() {
 
   const { i18n } = useTranslation()
 
+  // Ініціалізуємо хук для збереження проміжних результатів
+  const { saveProgress, isSaving: isSavingProgress, lastSaved } = useSaveProgressiveResults()
+  
+  // Генеруємо унікальний userId для цієї сесії
+  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+
   // Завантажуємо питання з Firebase
   const quest1 = useMagicalQuestQuestions(1)
   const quest2 = useMagicalQuestQuestions(2)
@@ -186,7 +193,7 @@ function SurveyClient() {
   const stepQuestionsCount = currentStep?.questions.length || 0
   const stepProgress = ((currentQuestionIndex + 1) / stepQuestionsCount) * 100
 
-  // On mount, check for step param
+  // On mount, check for step param and start survey tracking
   useEffect(() => {
     const stepParam = searchParams.get('step')
     if (stepParam !== null) {
@@ -196,6 +203,19 @@ function SurveyClient() {
         setCurrentQuestionIndex(0)
       }
     }
+    
+    // Запускаємо відстеження часу проходження тесту
+    surveyUtils.startSurvey('magical-quest')
+    
+    // Зберігаємо базові метадані користувача
+    surveyUtils.saveUserMetadata({
+      userType: 'student',
+      additionalData: {
+        language: i18n.language,
+        startedAt: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      }
+    })
     // eslint-disable-next-line
   }, [])
 
@@ -211,6 +231,29 @@ function SurveyClient() {
     
     const updatedResponses = [...responses, newResponse]
     setResponses(updatedResponses)
+
+    // 💾 Зберігаємо прогрес після кожної відповіді
+    try {
+      console.log(`💾 Saving progress after answer: ${currentQuestion.id}`)
+      await saveProgress(
+        userId,
+        'student', // Припускаємо, що це учень
+        'magical-quest',
+        'Магічний квест професій',
+        updatedResponses,
+        currentStepIndex + 1,
+        stepsData.length,
+        {
+          currentQuestionIndex: currentQuestionIndex + 1,
+          totalQuestionsInStep: currentStep.questions.length,
+          stepName: currentStep.title
+        }
+      )
+      console.log(`✅ Progress saved successfully! Last saved: ${lastSaved}`)
+    } catch (error) {
+      console.warn('⚠️ Failed to save progress:', error)
+      // Не блокуємо продовження опитування при помилці збереження
+    }
     
     if (currentQuestionIndex < currentStep.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
@@ -337,6 +380,21 @@ function SurveyClient() {
             >
               Автозаповнити для тесту
             </button>
+
+            {/* Saving indicator */}
+            {isSavingProgress && (
+              <div className="flex items-center justify-center text-blue-200 text-sm mb-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-200 mr-2"></div>
+                Збереження прогресу...
+              </div>
+            )}
+            
+            {lastSaved && !isSavingProgress && (
+              <div className="flex items-center justify-center text-green-200 text-xs mb-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                Останнє збереження: {lastSaved.toLocaleTimeString()}
+              </div>
+            )}
 
             {/* Progress bar */}
             <div className="flex justify-between items-center text-white/80 text-sm mb-1">
@@ -493,4 +551,4 @@ function SurveyClient() {
   )
 }
 
-export default SurveyClient 
+export default SurveyClient
