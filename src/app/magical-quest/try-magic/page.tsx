@@ -61,7 +61,7 @@ export default function TryMagic() {
         chosenProfession: profession,
         skillsToImprove: [...selectedSkills, ...(customSkill ? [customSkill] : [])],
       };
-      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language);
+      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language, 'magical-quest-try-magic');
 
       // Save to Firestore
       try {

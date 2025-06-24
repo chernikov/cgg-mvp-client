@@ -269,7 +269,7 @@ function SurveyClient() {
       const stepResponses = updatedResponses.filter(r => stepQuestionIds.includes(r.questionId))
       // Call AI for this step
       try {
-        const result = await analyzeSurveyResponses(stepResponses, i18n.language)
+        const result = await analyzeSurveyResponses(stepResponses, i18n.language, 'magical-quest')
         localStorage.setItem(`stepMatches_${currentStepIndex}`, JSON.stringify(result.matches))
       } catch (error) {
         console.error('Error analyzing step responses:', error)
@@ -283,7 +283,7 @@ function SurveyClient() {
         // Save responses to localStorage
         localStorage.setItem('surveyResponses', JSON.stringify(updatedResponses))
         // Get AI analysis for all responses
-        const result = await analyzeSurveyResponses(updatedResponses, i18n.language)
+        const result = await analyzeSurveyResponses(updatedResponses, i18n.language, 'magical-quest')
         // Save matches to localStorage
         localStorage.setItem('surveyMatches', JSON.stringify(result.matches))
         // Hide loader and redirect

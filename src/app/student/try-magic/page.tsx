@@ -61,7 +61,7 @@ export default function TryMagic() {
         chosenProfession: profession,
         skillsToImprove: [...selectedSkills, ...(customSkill ? [customSkill] : [])],
       }
-      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language)
+      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language, 'student-try-magic')
       localStorage.setItem('tryMagicResult', JSON.stringify(aiResult))
       // Save to Firestore
       if (db) {

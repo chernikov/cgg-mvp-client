@@ -282,6 +282,13 @@ export function useSaveTestResult() {
     console.log('🚀 useSaveTestResult: Starting save process')
     console.log('📝 Result data to save:', resultData)
     
+    // Додаткове логування для AI
+    console.log('🔍 AI Logging Debug Info:')
+    console.log('   - QuestionnaireId for AI logging:', resultData.questionnaireId)
+    console.log('   - Responses count:', resultData.responses?.length || 0)
+    console.log('   - Has matches:', !!resultData.matches)
+    console.log('   - User ID:', resultData.userId)
+    
     setIsSaving(true)
     setError(null)
     

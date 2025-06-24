@@ -115,7 +115,7 @@ export default function StudentSurvey() {
         // Save responses to localStorage
         localStorage.setItem('surveyResponses', JSON.stringify(updatedResponses))
         // Get AI analysis
-        const result = await analyzeSurveyResponses(updatedResponses, i18n.language)
+        const result = await analyzeSurveyResponses(updatedResponses, i18n.language, 'student-survey')
         // Save matches to localStorage
         localStorage.setItem('surveyMatches', JSON.stringify(result.matches))
         // Save to Firestore
