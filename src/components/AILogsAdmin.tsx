@@ -19,9 +19,7 @@ export default function AILogsAdmin() {
     dateTo: '',
     success: 'all' // 'all', 'success', 'error'
   })
-  useEffect(() => {
-    loadLogs()
-  }, [loadLogs])
+  
   const loadLogs = useCallback(async () => {
     try {
       setLoading(true)
@@ -67,9 +65,12 @@ export default function AILogsAdmin() {
       console.error('Error loading AI logs:', err)
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
-      setLoading(false)
-    }
+      setLoading(false)    }
   }, [filter])
+
+  useEffect(() => {
+    loadLogs()
+  }, [loadLogs])
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('uk-UA', {
