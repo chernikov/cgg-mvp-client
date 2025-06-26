@@ -26,6 +26,7 @@ jobs:
       NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       NEXT_PUBLIC_OPENAI_API_KEY: ${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
     
+      
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -43,6 +44,11 @@ jobs:
       
     - name: Run validation
       run: npm run validate
+    - name: List files
+      run: ls -la
+
+    - name: Show firebase.json
+      run: cat firebase.json
       
     - name: Deploy to Firebase App Hosting
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
