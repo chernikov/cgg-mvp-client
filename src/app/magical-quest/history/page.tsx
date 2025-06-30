@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { db, auth } from '@/config/firebase'
+import { db, auth } from '@/lib/firebase'
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
 
 interface SurveyHistory {

@@ -1,0 +1,129 @@
+{
+  "intro": {
+    "title": "Welcome to the Magical Career Guidance Guild for Parents!",
+    "subtitle1": "This section will help you better support your child in choosing a future career.",
+    "subtitle2": "Answer the questions to receive personalized advice and tools to help your child.",
+    "start": "Start"
+  },
+  "survey": {
+    "title": "Parent Survey",
+    "step": "Step",
+    "of": "/",
+    "complete": "Finish",
+    "error_required": "This field is required",
+    "back": "Back",
+    "next": "Next",
+    "questions": {
+      "child_age": {
+        "text": "Child's age",
+        "placeholder": "12"
+      },
+      "want_to_help": {
+        "text": "Do you want to help your child choose a career?",
+        "options": ["Yes", "No"]
+      },
+      "felt_uncertain": {
+        "text": "Have you ever felt uncertain about your child's career choice?",
+        "options": ["Yes", "No"]
+      },
+      "current_help_methods": {
+        "text": "What methods have you already used to help?",
+        "options": ["Talked to child", "Advice from friends", "Career tests", "Meetings with professionals", "Other"]
+      },
+      "discuss_frequency": {
+        "text": "How often do you discuss career choices with your child?",
+        "options": ["Often", "Sometimes", "Rarely", "Never"]
+      },
+      "tried_tools": {
+        "text": "What tools have you tried for career guidance?",
+        "options": ["Online tests", "Consultations", "Books", "Webinars", "Other"]
+      },
+      "tools_satisfaction": {
+        "text": "How satisfied are you with these tools?",
+        "options": ["Very satisfied", "Satisfied", "Rather not", "Dissatisfied"]
+      },
+      "ideal_tool": {
+        "text": "What would be your ideal career guidance tool?",
+        "placeholder": "Briefly describe"
+      },
+      "would_use_ai_tool": {
+        "text": "Would you like to use an AI tool for career guidance?",
+        "options": ["Yes", "No", "Maybe"]
+      },
+      "ai_tool_requirements": {
+        "text": "What requirements do you have for such a tool?",
+        "placeholder": "Briefly describe"
+      },
+      "other_comments": {
+        "text": "Other comments or wishes",
+        "placeholder": "Briefly describe"
+      },
+      "want_results": {
+        "text": "Would you like to receive results after the survey?",
+        "options": ["Yes", "No"]
+      },
+      "email": {
+        "text": "Please provide your email to receive the results",
+        "placeholder": "your@email.com"
+      }
+    }
+  },
+  "results": {
+    "title": "Example Survey Results",
+    "subtitle": "Professions recommended by the system:",
+    "reasons": "Reasons:",
+    "strong_skills": "Strong skills:",
+    "skills_to_improve": "Skills to improve:",
+    "salary": "Salary:",
+    "education": "Education:",
+    "next_steps": "Next steps:",
+    "back_home": "Back Home",
+    "professions": {
+      "career_consultant": {
+        "title": "Teen Career Consultant",
+        "fit_reasons": [
+          "You actively support your child in career choice",
+          "You are interested in modern career guidance approaches"
+        ],
+        "strong_skills": ["Communication", "Support"],
+        "skills_to_improve": ["Using digital tools"],
+        "education_offline": ["Pedagogical University"],
+        "education_online": ["Parenting courses"],
+        "next_steps": [
+          "Explore modern career guidance platforms",
+          "Attend a webinar for parents"
+        ]
+      },
+      "family_coordinator": {
+        "title": "Family Education Program Coordinator",
+        "fit_reasons": [
+          "You organize educational activities for your family",
+          "You strive for your child's development"
+        ],
+        "strong_skills": ["Organization", "Motivation"],
+        "skills_to_improve": ["Finding partnership programs"],
+        "education_offline": ["University of Management"],
+        "education_online": ["Event organization courses"],
+        "next_steps": [
+          "Organize a family project",
+          "Engage your child in clubs"
+        ]
+      },
+      "education_partner": {
+        "title": "Educational Initiatives Partner",
+        "fit_reasons": [
+          "You support innovation in education",
+          "You are open to new ideas"
+        ],
+        "strong_skills": ["Creativity", "Flexibility"],
+        "skills_to_improve": ["Networking"],
+        "education_offline": ["Institute of Innovative Education"],
+        "education_online": ["Innovation courses"],
+        "next_steps": [
+          "Join a parent community",
+          "Participate in joint projects"
+        ]
+      }
+    }
+  }
+} 

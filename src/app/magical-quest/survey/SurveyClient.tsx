@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { magicalQuestQuestions } from '@/config/questions'
 import { analyzeSurveyResponses } from '@/lib/openai'
 import type { SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
 import { Suspense } from 'react'
-import { useMagicalQuestQuestions, useSaveProgressiveResults } from '@/hooks/useQuestions'
-import surveyUtils from '@/utils/survey.utils'
 
 // Types
 
@@ -31,17 +30,20 @@ const steps: Step[] = [
   {
     title: 'Крок 1: Особиста інформація',
     description: 'Розкажи нам про себе',
-    questions: []
+    questions: magicalQuestQuestions.quest1 as Question[]
   },
   {
     title: 'Крок 2: Навчання та розвиток',
     description: 'Дізнаємося про твій підхід до навчання',
-    questions: []
+    questions: magicalQuestQuestions.quest2.slice(0, -1) as Question[]
   },
   {
     title: 'Крок 3: Фізичний та емоційний стан',
     description: 'Останні питання про твій стан',
-    questions: []
+    questions: [
+      ...magicalQuestQuestions.quest2.slice(-1),
+      ...magicalQuestQuestions.quest3
+    ] as Question[]
   }
 ]
 
@@ -91,48 +93,48 @@ const TEST_ANSWERS: Record<string, string | string[]> = {
 };
 
 // Magic loading messages for loader
-const magicLoadingMessages = [
-  {
-    title: "Магія працює...",
-    desc: "Твої найкращі кар'єрні можливості вже формуються. Зачекай, поки магічні дані збираються!"
-  },
-  {
-    title: "Чарівний пилок аналізує твої відповіді...",
-    desc: "Незабаром з'являться професії, які змінять твоє майбутнє!"
-  },
-  {
-    title: "Чарівна куля обирає твій шлях...",
-    desc: "Трохи терпіння — і ти побачиш свої магічні результати!"
-  },
-  {
-    title: "Магічний портал відкривається...",
-    desc: "Твої таланти вже шукають найкращі професії!"
-  },
-  {
-    title: "Чарівник готує для тебе унікальні можливості...",
-    desc: "Зачекай, поки магія завершить свою роботу!"
-  },
-  {
-    title: "Зірки складають твій кар'єрний гороскоп...",
-    desc: "Твої можливості вже на горизонті!"
-  },
-  {
-    title: "Магічний компас шукає твій ідеальний напрямок...",
-    desc: "Трохи терпіння — і ти дізнаєшся свій шлях!"
-  },
-  {
-    title: "Чарівна мапа малює твоє майбутнє...",
-    desc: "Професії вже формуються у магічному світі!"
-  },
-  {
-    title: "Магічний квест триває...",
-    desc: "Твої відповіді перетворюються на унікальні рекомендації!"
-  },
-  {
-    title: "Чарівна енергія збирає дані...",
-    desc: "Незабаром ти побачиш свої найкращі професійні можливості!"
-  }
-];
+// const magicLoadingMessages = [
+//   {
+//     title: "Магія працює...",
+//     desc: "Твої найкращі кар'єрні можливості вже формуються. Зачекай, поки магічні дані збираються!"
+//   },
+//   {
+//     title: "Чарівний пилок аналізує твої відповіді...",
+//     desc: "Незабаром з'являться професії, які змінять твоє майбутнє!"
+//   },
+//   {
+//     title: "Чарівна куля обирає твій шлях...",
+//     desc: "Трохи терпіння — і ти побачиш свої магічні результати!"
+//   },
+//   {
+//     title: "Магічний портал відкривається...",
+//     desc: "Твої таланти вже шукають найкращі професії!"
+//   },
+//   {
+//     title: "Чарівник готує для тебе унікальні можливості...",
+//     desc: "Зачекай, поки магія завершить свою роботу!"
+//   },
+//   {
+//     title: "Зірки складають твій кар'єрний гороскоп...",
+//     desc: "Твої можливості вже на горизонті!"
+//   },
+//   {
+//     title: "Магічний компас шукає твій ідеальний напрямок...",
+//     desc: "Трохи терпіння — і ти дізнаєшся свій шлях!"
+//   },
+//   {
+//     title: "Чарівна мапа малює твоє майбутнє...",
+//     desc: "Професії вже формуються у магічному світі!"
+//   },
+//   {
+//     title: "Магічний квест триває...",
+//     desc: "Твої відповіді перетворюються на унікальні рекомендації!"
+//   },
+//   {
+//     title: "Чарівна енергія збирає дані...",
+//     desc: "Незабаром ти побачиш свої найкращі професійні можливості!"
+//   }
+// ];
 
 function SurveyClient() {
   const router = useRouter()
@@ -143,57 +145,31 @@ function SurveyClient() {
   const [textInput, setTextInput] = useState('')
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [loadingAI, setLoadingAI] = useState(false)
-  const [magicMsg, setMagicMsg] = useState<null | { title: string; desc: string }>(null)
-  const [stepsData, setStepsData] = useState<Step[]>(steps)
+  const { i18n, t } = useTranslation('magical-quest')
 
-  const { i18n } = useTranslation()
-
-  // Ініціалізуємо хук для збереження проміжних результатів
-  const { saveProgress, isSaving: isSavingProgress, lastSaved } = useSaveProgressiveResults()
-  
-  // Генеруємо унікальний userId для цієї сесії
-  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
-
-  // Завантажуємо питання з Firebase
-  const quest1 = useMagicalQuestQuestions(1)
-  const quest2 = useMagicalQuestQuestions(2)
-  const quest3 = useMagicalQuestQuestions(3)
-
-  // Оновлюємо steps коли завантажуються питання
-  useEffect(() => {
-    if (!quest1.isLoading && !quest2.isLoading && !quest3.isLoading) {
-      if (quest1.questions.length > 0 && quest2.questions.length > 0 && quest3.questions.length > 0) {
-        const updatedSteps: Step[] = [
-          {
-            title: 'Крок 1: Особиста інформація',
-            description: 'Розкажи нам про себе',
-            questions: quest1.questions as Question[]
-          },
-          {
-            title: 'Крок 2: Навчання та розвиток',
-            description: 'Дізнаємося про твій підхід до навчання',
-            questions: quest2.questions.slice(0, -1) as Question[]
-          },
-          {
-            title: 'Крок 3: Фізичний та емоційний стан',
-            description: 'Останні питання про твій стан',
-            questions: [
-              ...quest2.questions.slice(-1),
-              ...quest3.questions
-            ] as Question[]
-          }
-        ]
-        setStepsData(updatedSteps)
-      }
-    }
-  }, [quest1.isLoading, quest2.isLoading, quest3.isLoading, quest1.questions, quest2.questions, quest3.questions])
-
-  const currentStep = stepsData[currentStepIndex]
-  const currentQuestion = currentStep?.questions[currentQuestionIndex] as Question
-  const stepQuestionsCount = currentStep?.questions.length || 0
+  const currentStep = steps[currentStepIndex]
+  const currentQuestion = currentStep.questions[currentQuestionIndex] as Question
+  const stepQuestionsCount = currentStep.questions.length
   const stepProgress = ((currentQuestionIndex + 1) / stepQuestionsCount) * 100
 
-  // On mount, check for step param and start survey tracking
+  // In SurveyClient, load loadingMessages from i18n
+  const loadingMessages = t('survey.loadingMessages', { returnObjects: true }) as { title: string, desc: string }[];
+
+  // Set magicMsg only once per loading session
+  const [magicMsg] = useState(() =>
+    loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
+  );
+
+  // Motivational messages logic
+  const motivationMessages = t('survey.motivation', { returnObjects: true }) as string[];
+  const [motivationIndex, setMotivationIndex] = useState<number>(() => Math.floor(Math.random() * motivationMessages.length));
+
+  useEffect(() => {
+    // On language change, pick a new random index
+    setMotivationIndex(Math.floor(Math.random() * motivationMessages.length));
+  }, [i18n.language, currentStepIndex, currentQuestionIndex, motivationMessages.length]);
+
+  // On mount, check for step param
   useEffect(() => {
     const stepParam = searchParams.get('step')
     if (stepParam !== null) {
@@ -203,24 +179,7 @@ function SurveyClient() {
         setCurrentQuestionIndex(0)
       }
     }
-    
-    // Запускаємо відстеження часу проходження тесту
-    surveyUtils.startSurvey('magical-quest')
-    
-    // Зберігаємо базові метадані користувача
-    surveyUtils.saveUserMetadata({
-      userType: 'student',
-      additionalData: {
-        language: i18n.language,
-        startedAt: new Date().toISOString(),
-        userAgent: navigator.userAgent
-      }
-    })
     // eslint-disable-next-line
-  }, [])
-
-  useEffect(() => {
-    setMagicMsg(magicLoadingMessages[Math.floor(Math.random() * magicLoadingMessages.length)])
   }, [])
 
   const handleAnswer = async (answer: string | string[]) => {
@@ -231,29 +190,6 @@ function SurveyClient() {
     
     const updatedResponses = [...responses, newResponse]
     setResponses(updatedResponses)
-
-    // 💾 Зберігаємо прогрес після кожної відповіді
-    try {
-      console.log(`💾 Saving progress after answer: ${currentQuestion.id}`)
-      await saveProgress(
-        userId,
-        'student', // Припускаємо, що це учень
-        'magical-quest',
-        'Магічний квест професій',
-        updatedResponses,
-        currentStepIndex + 1,
-        stepsData.length,
-        {
-          currentQuestionIndex: currentQuestionIndex + 1,
-          totalQuestionsInStep: currentStep.questions.length,
-          stepName: currentStep.title
-        }
-      )
-      console.log(`✅ Progress saved successfully! Last saved: ${lastSaved}`)
-    } catch (error) {
-      console.warn('⚠️ Failed to save progress:', error)
-      // Не блокуємо продовження опитування при помилці збереження
-    }
     
     if (currentQuestionIndex < currentStep.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
@@ -269,7 +205,7 @@ function SurveyClient() {
       const stepResponses = updatedResponses.filter(r => stepQuestionIds.includes(r.questionId))
       // Call AI for this step
       try {
-        const result = await analyzeSurveyResponses(stepResponses, i18n.language, 'magical-quest')
+        const result = await analyzeSurveyResponses(stepResponses, i18n.language)
         localStorage.setItem(`stepMatches_${currentStepIndex}`, JSON.stringify(result.matches))
       } catch (error) {
         console.error('Error analyzing step responses:', error)
@@ -283,7 +219,7 @@ function SurveyClient() {
         // Save responses to localStorage
         localStorage.setItem('surveyResponses', JSON.stringify(updatedResponses))
         // Get AI analysis for all responses
-        const result = await analyzeSurveyResponses(updatedResponses, i18n.language, 'magical-quest')
+        const result = await analyzeSurveyResponses(updatedResponses, i18n.language)
         // Save matches to localStorage
         localStorage.setItem('surveyMatches', JSON.stringify(result.matches))
         // Hide loader and redirect
@@ -351,16 +287,22 @@ function SurveyClient() {
     }
   }
 
+  // Before rendering options - only get options for questions that have them
+  const options = (currentQuestion.type === 'select' || currentQuestion.type === 'multiselect')
+    ? t('survey.questions.' + currentQuestion.id + '.options', { returnObjects: true })
+    : [];
+  const optionsArray: string[] = Array.isArray(options) ? options : [];
+
   if (loadingAI) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
         <div className="max-w-lg w-full bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-2xl animate-fade-in flex flex-col items-center justify-center">
           <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-yellow-400 mb-6"></div>
-          <h2 className="text-2xl font-bold text-yellow-200 mb-2 text-center">
-            {magicMsg ? magicMsg.title : magicLoadingMessages[0].title}
+          <h2 className="text-xl font-bold text-yellow-300 mb-2 text-center">
+            {magicMsg ? magicMsg.title : loadingMessages[0].title}
           </h2>
           <p className="text-green-100 text-lg text-center">
-            {magicMsg ? magicMsg.desc : magicLoadingMessages[0].desc}
+            {magicMsg ? magicMsg.desc : loadingMessages[0].desc}
           </p>
         </div>
       </main>
@@ -378,27 +320,12 @@ function SurveyClient() {
               onClick={handleAutofill}
               className="mb-4 px-4 py-2 rounded bg-green-300 text-green-900 font-bold hover:bg-green-400 transition-all duration-200"
             >
-              Автозаповнити для тесту
+              {t('survey.ui.autofill')}
             </button>
-
-            {/* Saving indicator */}
-            {isSavingProgress && (
-              <div className="flex items-center justify-center text-blue-200 text-sm mb-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-200 mr-2"></div>
-                Збереження прогресу...
-              </div>
-            )}
-            
-            {lastSaved && !isSavingProgress && (
-              <div className="flex items-center justify-center text-green-200 text-xs mb-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                Останнє збереження: {lastSaved.toLocaleTimeString()}
-              </div>
-            )}
 
             {/* Progress bar */}
             <div className="flex justify-between items-center text-white/80 text-sm mb-1">
-              <span>Крок {currentQuestionIndex + 1} з {stepQuestionsCount}</span>
+              <span>{t('survey.ui.step')} {currentQuestionIndex + 1} {t('survey.ui.of')} {stepQuestionsCount}</span>
               <span>{Math.round(stepProgress)}%</span>
             </div>
             <div className="h-2 w-full bg-gradient-to-r from-purple-400 via-teal-400 to-green-400 rounded-full mb-6 overflow-hidden">
@@ -409,116 +336,106 @@ function SurveyClient() {
             </div>
 
             {/* Question */}
-            {currentQuestion ? (
-              <>
-                <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{currentQuestion.question}</h2>
+            <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{t('survey.questions.' + currentQuestion.id + '.text')}</h2>
 
-                <div className="space-y-4">
-                  {currentQuestion.type === 'text' || currentQuestion.type === 'email' || currentQuestion.type === 'number' ? (
-                    <form onSubmit={handleTextSubmit} className="space-y-4">
-                      <input
-                        type={currentQuestion.type}
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder={currentQuestion.placeholder}
-                        min={currentQuestion.type === 'number' ? currentQuestion.min : undefined}
-                        max={currentQuestion.type === 'number' ? currentQuestion.max : undefined}
-                        className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
-                        required
-                      />
-                      <div className="flex gap-4 mt-2">
-                        <button
-                          type="button"
-                          onClick={handleBack}
-                          disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                          className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Назад
-                        </button>
-                        <button
-                          type="submit"
-                          className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
-                        >
-                          Далі
-                        </button>
-                      </div>
-                    </form>
-                  ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
-                    <>
-                      <div className="space-y-2">
-                        {currentQuestion.options?.map((option) => (
-                          <button
-                            key={option}
-                            onClick={() => handleOptionSelect(option)}
-                            className={`w-full text-left p-4 rounded-xl transition-all duration-300 border-2 text-lg ${
-                              selectedOptions.includes(option)
-                                ? 'bg-green-400 text-green-900 border-green-500 font-bold'
-                                : 'bg-white text-green-900 border-green-200 hover:bg-green-100'
-                            }`}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                      {currentQuestion.type === 'multiselect' && (
-                        <div className="flex gap-4 mt-4">
-                          <button
-                            type="button"
-                            onClick={handleBack}
-                            disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                            className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Назад
-                          </button>
-                          <button
-                            onClick={handleMultiSelectSubmit}
-                            disabled={selectedOptions.length === 0}
-                            className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                          >
-                            Далі
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : currentQuestion.type === 'textarea' ? (
-                    <form onSubmit={handleTextSubmit} className="space-y-4">
-                      <textarea
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder={currentQuestion.placeholder}
-                        className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[120px] text-lg"
-                        required
-                      />
-                      <div className="flex gap-4 mt-2">
-                        <button
-                          type="button"
-                          onClick={handleBack}
-                          disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
-                          className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Назад
-                        </button>
-                        <button
-                          type="submit"
-                          className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
-                        >
-                          Далі
-                        </button>
-                      </div>
-                    </form>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <div className="text-center text-green-100">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-100 mx-auto mb-4"></div>
-                <p>Завантаження питання...</p>
-              </div>
-            )}
+            <div className="space-y-4">
+              {currentQuestion.type === 'text' || currentQuestion.type === 'email' || currentQuestion.type === 'number' ? (
+                <form onSubmit={handleTextSubmit} className="space-y-4">
+                  <input
+                    type={currentQuestion.type}
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    placeholder={t('survey.questions.' + currentQuestion.id + '.placeholder')}
+                    min={currentQuestion.type === 'number' ? currentQuestion.min : undefined}
+                    max={currentQuestion.type === 'number' ? currentQuestion.max : undefined}
+                    className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
+                  />
+                  <div className="flex gap-4 mt-2">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                      className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t('survey.ui.back')}
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
+                    >
+                      {t('survey.ui.next')}
+                    </button>
+                  </div>
+                </form>
+              ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
+                <>
+                  <div className="space-y-2">
+                    {optionsArray.map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => handleOptionSelect(option)}
+                        className={`w-full text-left p-4 rounded-xl transition-all duration-300 border-2 text-lg ${
+                          selectedOptions.includes(option)
+                            ? 'bg-green-400 text-green-900 border-green-500 font-bold'
+                            : 'bg-white text-green-900 border-green-200 hover:bg-green-100'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {currentQuestion.type === 'multiselect' && (
+                    <div className="flex gap-4 mt-4">
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                        className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('survey.ui.back')}
+                      </button>
+                      <button
+                        onClick={handleMultiSelectSubmit}
+                        disabled={selectedOptions.length === 0}
+                        className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                      >
+                        {t('survey.ui.next')}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : currentQuestion.type === 'textarea' ? (
+                <form onSubmit={handleTextSubmit} className="space-y-4">
+                  <textarea
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    placeholder={t('survey.questions.' + currentQuestion.id + '.placeholder')}
+                    className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[120px] text-lg"
+                    required
+                  />
+                  <div className="flex gap-4 mt-2">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      disabled={currentStepIndex === 0 && currentQuestionIndex === 0}
+                      className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t('survey.ui.back')}
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
+                    >
+                      {t('survey.ui.next')}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+            </div>
 
             {/* Motivational message */}
             <div className="mt-8 text-center text-green-100 text-lg font-semibold">
-              Ти чудово справляєшся! Продовжуй, юний маге!
+              {motivationMessages[motivationIndex]}
             </div>
 
             {/* Step indicator */}
@@ -551,4 +468,4 @@ function SurveyClient() {
   )
 }
 
-export default SurveyClient
+export default SurveyClient 

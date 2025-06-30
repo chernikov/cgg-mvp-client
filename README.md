@@ -39,10 +39,6 @@ A magical career guidance platform that helps users discover their professional 
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    OPENAI_API_KEY=your_openai_api_key
    ```
-   
-   **OR** for Firebase App Hosting deployment:
-   - Copy `apphosting.yaml.template` to `apphosting.yaml`
-   - Fill in your actual Firebase and OpenAI API credentials
 4. Run the development server:
    ```bash
    npm run dev

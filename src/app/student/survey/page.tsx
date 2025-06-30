@@ -1,37 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useMagicalQuestQuestions } from '@/hooks/useQuestions'
+import { magicalQuestQuestions } from '@/config/questions'
 import { analyzeSurveyResponses } from '@/lib/openai'
 import type { SurveyResponse } from '@/types/survey'
 import { useTranslation } from 'react-i18next'
-import { db, auth } from '@/config/firebase'
+import { db, auth } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 
-// Magic loading messages for loader
-const magicLoadingMessages = [
-  {
-    title: "Магія працює...",
-    desc: "Твої найкращі кар'єрні можливості вже формуються. Зачекай, поки магічні дані збираються!"
-  },
-  {
-    title: "Чарівний пилок аналізує твої відповіді...",
-    desc: "Незабаром з'являться професії, які змінять твоє майбутнє!"
-  },
-  {
-    title: "Чарівна куля обирає твій шлях...",
-    desc: "Трохи терпіння — і ти побачиш свої магічні результати!"
-  },
-  {
-    title: "Магічний портал відкривається...",
-    desc: "Твої таланти вже шукають найкращі професії!"
-  },
-  {
-    title: "Чарівник готує для тебе унікальні можливості...",
-    desc: "Зачекай, поки магія завершить свою роботу!"
-  }
-];
+// Combine all questions into a single array
+const allQuestions = [
+  ...magicalQuestQuestions.quest1,
+  ...magicalQuestQuestions.quest2,
+  ...magicalQuestQuestions.quest3
+] as Question[];
 
 type Question = {
   id: string
@@ -43,58 +26,78 @@ type Question = {
   max?: number
 }
 
+// Autofill answers for testing
+const TEST_ANSWERS: Record<string, string | string[]> = {
+  email: "test.student@gmail.com",
+  nickname: "Олександр",
+  age: "15",
+  gender: "Boy",
+  country_of_birth: "Ukraine",
+  current_mood: "Good, because it's sunny today and I got a good grade.",
+  hobby: "I play guitar, I love football.",
+  habits: "I wake up at 7 AM, I read before bed.",
+  top_abilities: "Teamwork, creativity, problem solving",
+  abilities_to_develop: "Public speaking, time management, English language",
+  chosen_profession: "Programmer",
+  favorite_character: "Harry Potter, because he is brave and always helps his friends.",
+  antihero: "Voldemort, because he is evil and selfish.",
+  admired_relative: "Mom, because she always supports me.",
+  not_like_relative: "Uncle, because he often gets angry.",
+  bonus_characteristics: "I love helping others, I'm interested in science.",
+  learning_new_things_ease: "8",
+  preferred_learning_methods: ["Visual", "Kinesthetic"],
+  quick_school_task_situation: "I did my homework in 30 minutes because I concentrated and turned off my phone.",
+  effort_for_results: "9",
+  overcoming_difficulties_methods: ["Family", "Music"],
+  difficult_situation_example: "I prepared for a test in one night and got a good grade.",
+  making_new_friends_ease: "7",
+  conflict_behavior: "I try to speak calmly or walk away.",
+  center_of_attention_situation: "I performed at a school concert, it was exciting but interesting.",
+  responsibility_level: "8",
+  life_goals: ["Success", "Happiness", "Adventure"],
+  important_for_achieving_goals: "Support from friends and family, belief in myself.",
+  active_lifestyle_level: "7",
+  physical_fitness_methods: ["Sports", "Sleep"],
+  feeling_after_activity: "I feel energy and good mood.",
+  creativity_level: "9",
+  creativity_situations: ["Alone", "At school"],
+  nonstandard_solution_example: "I solved a math problem in a different way.",
+  emotional_control_level: "6",
+  negative_emotions_handling_methods: ["Talk to someone", "Listen to music"],
+  emotional_control_example: "Before performing on stage, I calmed down, took deep breaths.",
+  question_clarity_level: "10",
+  difficult_questions: "Questions about conflicts.",
+  interesting_questions: "Questions about hobbies and creativity.",
+  survey_improvement_suggestions: "Add more questions about modern professions."
+}
+
 export default function StudentSurvey() {
   const router = useRouter()
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('student')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState<SurveyResponse[]>([])
   const [textInput, setTextInput] = useState('')
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [loadingAI, setLoadingAI] = useState(false)
-  const [magicMsg, setMagicMsg] = useState(magicLoadingMessages[0])
-  
-  // Завантажуємо питання з Firebase
-  const quest1 = useMagicalQuestQuestions(1)
-  const quest2 = useMagicalQuestQuestions(2)  
-  const quest3 = useMagicalQuestQuestions(3)
-
-  // Поєднуємо всі питання в один масив
-  const [allQuestions, setAllQuestions] = useState<Question[]>([])
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true)
-
-  useEffect(() => {
-    if (!quest1.isLoading && !quest2.isLoading && !quest3.isLoading) {
-      if (quest1.questions.length > 0 && quest2.questions.length > 0 && quest3.questions.length > 0) {
-        const combined = [
-          ...quest1.questions,
-          ...quest2.questions,
-          ...quest3.questions
-        ] as Question[]
-        setAllQuestions(combined)
-      }
-      setIsLoadingQuestions(false)
-    }
-  }, [quest1.isLoading, quest2.isLoading, quest3.isLoading, quest1.questions, quest2.questions, quest3.questions])
-
-  useEffect(() => {
-    setMagicMsg(magicLoadingMessages[Math.floor(Math.random() * magicLoadingMessages.length)])
-  }, [])
-
-  // Показуємо лоадер поки завантажуються питання
-  if (isLoadingQuestions) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
-          <p className="mt-4 text-yellow-200">Завантаження магічних питань...</p>
-        </div>
-      </div>
-    );
-  }
 
   const currentQuestion: Question = allQuestions[currentQuestionIndex]
   const totalQuestions = allQuestions.length
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100
+
+  // Get translated question text, placeholder, and options
+  const questionText = t(`survey.questions.${currentQuestion.id}.text`)
+  const questionPlaceholder = t(`survey.questions.${currentQuestion.id}.placeholder`)
+  const questionOptions = (currentQuestion.type === 'select' || currentQuestion.type === 'multiselect')
+    ? t(`survey.questions.${currentQuestion.id}.options`, { returnObjects: true })
+    : []
+
+  // Get translated loading messages
+  const loadingMessages = t('survey.loadingMessages', { returnObjects: true }) as { title: string, desc: string }[];
+
+  // Set magicMsg only once per loading session
+  const [magicMsg] = useState(() =>
+    loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
+  );
 
   const handleAnswer = async (answer: string | string[]) => {
     const newResponse: SurveyResponse = {
@@ -114,8 +117,10 @@ export default function StudentSurvey() {
       try {
         // Save responses to localStorage
         localStorage.setItem('surveyResponses', JSON.stringify(updatedResponses))
+        // Save current language
+        localStorage.setItem('surveyLanguage', i18n.language)
         // Get AI analysis
-        const result = await analyzeSurveyResponses(updatedResponses, i18n.language, 'student-survey')
+        const result = await analyzeSurveyResponses(updatedResponses, i18n.language)
         // Save matches to localStorage
         localStorage.setItem('surveyMatches', JSON.stringify(result.matches))
         // Save to Firestore
@@ -170,6 +175,23 @@ export default function StudentSurvey() {
     }
   }
 
+  // Autofill handler (per question)
+  const handleAutofill = () => {
+    const answer = TEST_ANSWERS[currentQuestion.id];
+    if (!answer) return;
+    if (currentQuestion.type === 'multiselect') {
+      // Ensure answer is an array of strings
+      const answerArray = Array.isArray(answer) ? answer : [answer];
+      setSelectedOptions(answerArray);
+      setTimeout(() => handleAnswer(answerArray), 200);
+    } else if (currentQuestion.type === 'select') {
+      setTimeout(() => handleAnswer(answer), 200);
+    } else {
+      setTextInput(Array.isArray(answer) ? answer.join(', ') : answer);
+      setTimeout(() => handleAnswer(answer), 200);
+    }
+  }
+
   if (loadingAI) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
@@ -188,7 +210,7 @@ export default function StudentSurvey() {
         <div className="bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-2xl animate-fade-in">
           {/* Progress bar */}
           <div className="flex justify-between items-center text-white/80 text-sm mb-1">
-            <span>Питання {currentQuestionIndex + 1} з {totalQuestions}</span>
+            <span>{t('survey.step', { current: currentQuestionIndex + 1, total: totalQuestions })}</span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="h-2 w-full bg-gradient-to-r from-purple-400 via-teal-400 to-green-400 rounded-full mb-6 overflow-hidden">
@@ -199,7 +221,19 @@ export default function StudentSurvey() {
           </div>
 
           {/* Question */}
-          <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{currentQuestion.question}</h2>
+          <h2 className="text-xl font-bold text-green-100 mb-4 text-center">{questionText}</h2>
+
+          {/* Autofill for testing (per question) */}
+          <div className="flex mb-4">
+            <button
+              type="button"
+              onClick={handleAutofill}
+              className="px-4 py-2 rounded-lg bg-green-500 text-white font-bold text-base shadow hover:bg-green-600 transition-all"
+              style={{ marginRight: 'auto' }}
+            >
+              {t('survey.ui.autofill')}
+            </button>
+          </div>
 
           <div className="space-y-4">
             {currentQuestion.type === 'text' || currentQuestion.type === 'email' || currentQuestion.type === 'number' ? (
@@ -208,11 +242,10 @@ export default function StudentSurvey() {
                   type={currentQuestion.type}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  placeholder={currentQuestion.placeholder}
+                  placeholder={questionPlaceholder}
                   min={currentQuestion.type === 'number' && 'min' in currentQuestion ? currentQuestion.min : undefined}
                   max={currentQuestion.type === 'number' && 'max' in currentQuestion ? currentQuestion.max : undefined}
                   className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
-                  required
                 />
                 <div className="flex gap-4 mt-2">
                   <button
@@ -221,20 +254,20 @@ export default function StudentSurvey() {
                     disabled={currentQuestionIndex === 0}
                     className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Назад
+                    {t('survey.ui.back')}
                   </button>
                   <button
                     type="submit"
                     className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
                   >
-                    Далі
+                    {t('survey.ui.next')}
                   </button>
                 </div>
               </form>
             ) : currentQuestion.type === 'select' || currentQuestion.type === 'multiselect' ? (
               <>
                 <div className="space-y-2">
-                  {currentQuestion.options?.map((option: string) => (
+                  {Array.isArray(questionOptions) && questionOptions.map((option) => (
                     <button
                       key={option}
                       onClick={() => handleOptionSelect(option)}
@@ -256,14 +289,14 @@ export default function StudentSurvey() {
                       disabled={currentQuestionIndex === 0}
                       className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Назад
+                      {t('survey.ui.back')}
                     </button>
                     <button
                       onClick={handleMultiSelectSubmit}
                       disabled={selectedOptions.length === 0}
                       className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                     >
-                      Далі
+                      {t('survey.ui.next')}
                     </button>
                   </div>
                 )}
@@ -275,7 +308,6 @@ export default function StudentSurvey() {
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={currentQuestion.placeholder}
                   className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 min-h-[120px] text-lg"
-                  required
                 />
                 <div className="flex gap-4 mt-2">
                   <button
@@ -284,13 +316,13 @@ export default function StudentSurvey() {
                     disabled={currentQuestionIndex === 0}
                     className="flex-1 px-6 py-3 rounded-xl bg-green-900 text-green-200 font-bold hover:bg-green-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Назад
+                    {t('survey.ui.back')}
                   </button>
                   <button
                     type="submit"
                     className="flex-1 p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg"
                   >
-                    Далі
+                    {t('survey.ui.next')}
                   </button>
                 </div>
               </form>
@@ -299,7 +331,7 @@ export default function StudentSurvey() {
 
           {/* Motivational message */}
           <div className="mt-8 text-center text-green-100 text-lg font-semibold">
-            Ти чудово справляєшся! Продовжуй, юний маге!
+            {t('survey.ui.motivation')}
           </div>
         </div>
       </div>

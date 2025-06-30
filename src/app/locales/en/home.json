@@ -1,0 +1,15 @@
+{
+  "title": "Career Guidance Guild",
+  "subtitle": "Start your journey. Join the Guild to discover your path, unlock your potential, and become part of a community of explorers.",
+  "roles": [
+    { "title": "Magical Quest (new!)", "description": "Embark on a magical, game-like journey for students!", "href": "/magical-quest" },
+    { "title": "Magical Quest V2 (A/B test)", "description": "A new version of the magical quest for testing!", "href": "/magical-quest-v2" },
+    { "title": "Student", "description": "Find your calling and unlock your future.", "href": "/student" },
+    { "title": "Parent", "description": "Support your child's journey.", "href": "/parent" },
+    { "title": "Teacher", "description": "Inspire and lead the next generation.", "href": "/teacher" }
+  ],
+  "chooseRole": "Choose your role to start the adventure",
+  "copyright": "© 2025 Career Guidance Guild",
+  "linkedin": "LinkedIn",
+  "email": "info@careergg.com"
+} 

@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { analyzeSurveyResponses } from '@/lib/openai'
 import { useTranslation } from 'react-i18next'
-import { db, auth } from '@/config/firebase'
+import { db, auth } from '@/lib/firebase'
 import { collection, addDoc } from 'firebase/firestore'
 
 type Match = { skillsToImprove?: string[] }
 
 export default function TryMagic() {
   const router = useRouter()
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('student')
   const [profession, setProfession] = useState('')
   const [allSkills, setAllSkills] = useState<string[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
@@ -46,11 +46,11 @@ export default function TryMagic() {
     e.preventDefault()
     setError('')
     if (!profession) {
-      setError(i18n.language === 'uk' ? 'Введіть професію' : 'Enter a profession')
+      setError(t('tryMagic.errorProfession'))
       return
     }
     if (selectedSkills.length + (customSkill ? 1 : 0) === 0) {
-      setError(i18n.language === 'uk' ? 'Оберіть або введіть хоча б одну навичку для розвитку' : 'Select or enter at least one skill to improve')
+      setError(t('tryMagic.errorSkills'))
       return
     }
     setLoading(true)
@@ -61,7 +61,7 @@ export default function TryMagic() {
         chosenProfession: profession,
         skillsToImprove: [...selectedSkills, ...(customSkill ? [customSkill] : [])],
       }
-      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language, 'student-try-magic')
+      const aiResult = await analyzeSurveyResponses([...responses, extra], i18n.language)
       localStorage.setItem('tryMagicResult', JSON.stringify(aiResult))
       // Save to Firestore
       if (db) {
@@ -78,7 +78,7 @@ export default function TryMagic() {
       setLoading(false)
       router.push('/student/try-magic/results')
     } catch {
-      setError(i18n.language === 'uk' ? 'Помилка при зверненні до ШІ. Спробуйте ще раз.' : 'Error contacting AI. Please try again.')
+      setError(t('tryMagic.errorAI'))
       setLoading(false)
     }
   }
@@ -88,7 +88,7 @@ export default function TryMagic() {
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
         <div className="max-w-lg w-full bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-2xl animate-fade-in flex flex-col items-center">
           <div className="animate-spin rounded-full h-24 w-24 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
-          <div className="text-white">Магія працює...</div>
+          <div className="text-white">{t('tryMagic.loading')}</div>
         </div>
       </main>
     )
@@ -98,12 +98,12 @@ export default function TryMagic() {
     <main className="min-h-screen p-8 bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
       <div className="max-w-2xl mx-auto">
         <div className="animate-fade-in bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-xl">
-          <h1 className="text-3xl font-bold text-white mb-8 text-center">Спробуй магію</h1>
+          <h1 className="text-3xl font-bold text-white mb-8 text-center">{t('tryMagic.title')}</h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="profession" className="block text-white mb-2">
-                Введіть професію, яку хочете спробувати:
+                {t('tryMagic.enterProfession')}
               </label>
               <input
                 type="text"
@@ -111,14 +111,14 @@ export default function TryMagic() {
                 value={profession}
                 onChange={handleProfessionChange}
                 className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
-                placeholder="Наприклад: Програміст"
+                placeholder={t('tryMagic.professionPlaceholder')}
                 required
               />
             </div>
 
             <div>
               <label className="block text-white mb-2">
-                Оберіть навички для розвитку (до 3):
+                {t('tryMagic.selectSkills')}
               </label>
               <div className="space-y-2">
                 {allSkills.map((skill) => (
@@ -140,7 +140,7 @@ export default function TryMagic() {
 
             <div>
               <label htmlFor="customSkill" className="block text-white mb-2">
-                Або введіть власну навичку:
+                {t('tryMagic.orEnterCustomSkill')}
               </label>
               <input
                 type="text"
@@ -148,7 +148,7 @@ export default function TryMagic() {
                 value={customSkill}
                 onChange={handleCustomSkillChange}
                 className="w-full p-4 rounded-xl bg-white text-green-900 placeholder-green-400 border-2 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 text-lg"
-                placeholder="Наприклад: Публічні виступи"
+                placeholder={t('tryMagic.customSkillPlaceholder')}
               />
             </div>
 
@@ -160,7 +160,7 @@ export default function TryMagic() {
               type="submit"
               className="w-full p-4 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold hover:shadow-lg transition-all duration-300 text-lg"
             >
-              Спробувати магію
+              {t('tryMagic.submit')}
             </button>
           </form>
         </div>

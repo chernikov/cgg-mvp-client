@@ -1,0 +1,107 @@
+{
+  "survey": {
+    "title": "Teacher Survey",
+    "step": "Step",
+    "of": "of",
+    "complete": "Finish",
+    "error_required": "This field is required",
+    "back": "Back",
+    "next": "Next",
+    "questions": {
+      "subject": {
+        "text": "What subject do you teach?",
+        "placeholder": "e.g., Mathematics"
+      },
+      "age_groups": {
+        "text": "Which age groups do you work with?",
+        "placeholder": "e.g., 10-12 years old"
+      },
+      "country": {
+        "text": "Your country",
+        "placeholder": "Ukraine"
+      },
+      "asked_about_careers": {
+        "text": "Have students asked you about careers?",
+        "options": ["Yes", "No"]
+      },
+      "topics_discussed": {
+        "text": "What topics have you discussed with students about careers?",
+        "placeholder": "Briefly describe"
+      },
+      "help_methods": {
+        "text": "What methods do you use to help students choose a profession?",
+        "options": ["Individual talks", "Group sessions", "Inviting professionals", "Career tests", "Other"]
+      },
+      "confidence_level": {
+        "text": "How confident are you in your knowledge of modern professions? (1-10)",
+        "placeholder": "Rate from 1 to 10"
+      },
+      "main_challenges": {
+        "text": "What are the main challenges you face in career guidance for students?",
+        "placeholder": "Briefly describe"
+      },
+      "useful_tool": {
+        "text": "What tool would be most useful for you in career guidance?",
+        "placeholder": "Briefly describe"
+      },
+      "would_use_ai_tool": {
+        "text": "Would you like to use an AI tool for career guidance?",
+        "options": ["Yes", "No", "Maybe"]
+      },
+      "want_results": {
+        "text": "Would you like to receive results after the survey?",
+        "options": ["Yes", "No"]
+      },
+      "email": {
+        "text": "Please provide your email to receive the results",
+        "placeholder": "your@email.com"
+      }
+    }
+  },
+  "results": {
+    "title": "Example Survey Results",
+    "subtitle": "Professions recommended by the system:",
+    "reasons": "Reasons:",
+    "strong_skills": "Strong skills:",
+    "skills_to_improve": "Skills to improve:",
+    "salary": "Salary:",
+    "education": "Education:",
+    "next_steps": "Next steps:",
+    "back_home": "Back Home",
+    "professions": {
+      "career_consultant": {
+        "title": "Career Consultant",
+        "fit_reasons": ["You have experience working with students", "You are interested in modern professions"],
+        "strong_skills": ["Communication", "Analysis"],
+        "skills_to_improve": ["Using AI tools"],
+        "education_offline": ["Pedagogical University"],
+        "education_online": ["Career Guidance Courses"],
+        "next_steps": ["Explore modern AI tools", "Attend a career guidance seminar"]
+      },
+      "education_methodologist": {
+        "title": "Education Methodologist",
+        "fit_reasons": ["You have deep knowledge in your subject area", "You strive to improve the educational process"],
+        "strong_skills": ["Organization", "Creativity"],
+        "skills_to_improve": ["Implementing new technologies"],
+        "education_offline": ["Pedagogical Institute"],
+        "education_online": ["Courses on educational innovation"],
+        "next_steps": ["Participate in an innovation training", "Prepare your own educational project"]
+      },
+      "extracurricular_coordinator": {
+        "title": "Extracurricular Education Coordinator",
+        "fit_reasons": ["You actively involve students in extracurricular activities", "You have organizational skills"],
+        "strong_skills": ["Leadership", "Motivation"],
+        "skills_to_improve": ["Finding project partners"],
+        "education_offline": ["University of Management"],
+        "education_online": ["Leadership courses"],
+        "next_steps": ["Organize a new club or section", "Engage students in volunteer projects"]
+      }
+    }
+  },
+  "intro": {
+    "title": "Welcome to the Magical Career Guidance Guild for Teachers!",
+    "desc1": "This section will help you better understand students' needs and discover modern approaches to career guidance.",
+    "desc2": "Answer the questions to receive personalized recommendations and tools to support your students.",
+    "start": "Start"
+  }
+} 

@@ -18,6 +18,7 @@ export default function LanguageSwitcher() {
 
   const handleLanguageChange = (languageCode: string) => {
     i18n.changeLanguage(languageCode)
+    localStorage.setItem('selectedLanguage', languageCode)
     router.refresh()
   }
 
