@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
@@ -15,11 +15,23 @@ const languages = [
 export default function LanguageSwitcher() {
   const router = useRouter()
   const { i18n } = useTranslation()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLanguageChange = (languageCode: string) => {
     i18n.changeLanguage(languageCode)
-    localStorage.setItem('selectedLanguage', languageCode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedLanguage', languageCode)
+    }
     router.refresh()
+  }
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return <div className="fixed top-4 right-4 z-50 w-10 h-10" />
   }
 
   return (
