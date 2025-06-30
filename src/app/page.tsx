@@ -14,6 +14,15 @@ export default function Home() {
   const roles = t('roles', { returnObjects: true }) as Role[];
   return (
     <main className="min-h-screen flex flex-col items-center justify-between bg-gradient-to-br from-green-900 via-teal-900 to-purple-900 relative">
+      {/* DEPLOYMENT TEST BANNER - CloudRun Validation */}
+      <div className="w-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white text-center py-3 px-4 shadow-lg z-50">
+        <div className="flex items-center justify-center space-x-2">
+          <span className="text-lg font-bold">🚀 DEPLOYMENT TEST - Phase 1.1</span>
+          <span className="hidden sm:inline">|</span>
+          <span className="text-sm opacity-90">CloudRun Validation - {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+
       {/* Language Switcher slot (if needed) */}
       <div className="absolute top-4 right-4 z-10" id="lang-switcher-slot" />
 
