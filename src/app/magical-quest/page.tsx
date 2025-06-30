@@ -1,6 +1,9 @@
+"use client";
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link'
 
 export default function MagicalQuestIntro() {
+  const { t } = useTranslation('magical-quest');
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-900 via-teal-900 to-purple-900">
       <div className="max-w-lg w-full bg-gradient-to-br from-green-800/80 via-teal-800/80 to-purple-800/80 rounded-2xl p-8 shadow-2xl animate-fade-in">
@@ -9,18 +12,18 @@ export default function MagicalQuestIntro() {
             <span className="text-4xl">🧙</span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white mb-2">Я Ембервінґ, твій магічний гід</h1>
-            <p className="text-white/80">Давай разом знайдемо твій шлях до успіху!</p>
+            <h1 className="text-2xl font-bold text-white mb-2">{t('intro.title')}</h1>
+            <p className="text-white/80">{t('intro.subtitle')}</p>
           </div>
         </div>
 
         <div className="mb-8">
-          <p className="text-white/60 text-sm mt-2">Готовий почати? Натисни кнопку нижче!</p>
+          <p className="text-white/60 text-sm mt-2">{t('intro.progress')}</p>
         </div>
 
         <Link href="/magical-quest/survey">
           <button className="w-full p-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 transition-all duration-300 text-lg">
-            Почати
+            {t('intro.start')}
           </button>
         </Link>
       </div>

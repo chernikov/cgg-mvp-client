@@ -1,0 +1,15 @@
+{
+  "title": "Career Guidance Guild",
+  "subtitle": "अपनी यात्रा शुरू करें। गिल्ड में शामिल हों, अपना रास्ता खोजें, अपनी क्षमता को उजागर करें और खोजकर्ताओं के समुदाय का हिस्सा बनें।",
+  "roles": [
+    { "title": "जादुई खोज (नया!)", "description": "छात्रों के लिए एक जादुई, खेल जैसी यात्रा शुरू करें!", "href": "/magical-quest" },
+    { "title": "जादुई खोज V2 (A/B परीक्षण)", "description": "परीक्षण के लिए जादुई खोज का नया संस्करण!", "href": "/magical-quest-v2" },
+    { "title": "छात्र", "description": "अपना लक्ष्य खोजें और अपना भविष्य खोलें.", "href": "/student" },
+    { "title": "माता-पिता", "description": "अपने बच्चे की यात्रा का समर्थन करें.", "href": "/parent" },
+    { "title": "शिक्षक", "description": "अगली पीढ़ी को प्रेरित करें और उनका मार्गदर्शन करें.", "href": "/teacher" }
+  ],
+  "chooseRole": "रोमांच शुरू करने के लिए अपनी भूमिका चुनें",
+  "copyright": "© 2025 Career Guidance Guild",
+  "linkedin": "LinkedIn",
+  "email": "info@careergg.com"
+} 

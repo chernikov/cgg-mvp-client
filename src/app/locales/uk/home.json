@@ -1,0 +1,15 @@
+{
+  "title": "Career Guidance Guild",
+  "subtitle": "Почніть свою подорож. Приєднуйтесь до Гільдії, щоб відкрити свій шлях, розкрити потенціал і стати частиною спільноти дослідників.",
+  "roles": [
+    { "title": "Магічний квест (новинка!)", "description": "Вирушай у магічну, ігрову подорож для учнів!", "href": "/magical-quest" },
+    { "title": "Магічний квест V2 (A/B тест)", "description": "Нова версія магічного квесту для тестування!", "href": "/magical-quest-v2" },
+    { "title": "Учень", "description": "Знайди своє покликання та відкрий майбутнє.", "href": "/student" },
+    { "title": "Батько/Мати", "description": "Підтримай шлях своєї дитини.", "href": "/parent" },
+    { "title": "Вчитель", "description": "Надихай та веди нове покоління.", "href": "/teacher" }
+  ],
+  "chooseRole": "Оберіть свою роль, щоб розпочати пригоду",
+  "copyright": "© 2025 Career Guidance Guild",
+  "linkedin": "LinkedIn",
+  "email": "info@careergg.com"
+} 
